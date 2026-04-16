@@ -197,56 +197,238 @@ document.getElementById('startBtn').addEventListener('click', () => {
 
 // ---- Drawing helpers ----
 
-// Draw sky background
+// Draw Truist Park stadium background
 function drawBackground() {
-    // Sky gradient
-    const sky = ctx.createLinearGradient(0, 0, 0, H);
-    sky.addColorStop(0, '#1a4a8a');
-    sky.addColorStop(1, '#4a90d4');
+    // Day sky
+    const sky = ctx.createLinearGradient(0, 0, 0, H * 0.6);
+    sky.addColorStop(0, '#5ba3d9');
+    sky.addColorStop(1, '#a8d4f0');
     ctx.fillStyle = sky;
     ctx.fillRect(0, 0, W, H);
 
-    // Simple clouds
-    ctx.fillStyle = 'rgba(255,255,255,0.25)';
-    [[60,80,40],[200,50,55],[350,100,35]].forEach(([x,y,r]) => {
+    // Clouds
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    [[55,55,28],[170,40,38],[320,65,24],[390,45,18]].forEach(([x,y,r]) => {
         ctx.beginPath();
         ctx.arc(x, y, r, 0, Math.PI*2);
-        ctx.arc(x+30, y-10, r*0.7, 0, Math.PI*2);
+        ctx.arc(x+r*0.8, y-r*0.3, r*0.65, 0, Math.PI*2);
+        ctx.arc(x-r*0.6, y-r*0.2, r*0.55, 0, Math.PI*2);
         ctx.fill();
     });
 
-    // Ground
-    ctx.fillStyle = '#2d5a1b';
-    ctx.fillRect(0, H - 40, W, 40);
-    ctx.fillStyle = '#4a8a2d';
-    ctx.fillRect(0, H - 40, W, 8);
-
-    // Diamond dirt patch
-    ctx.fillStyle = '#c8a96e';
+    // Left stand
+    ctx.fillStyle = '#c8c8c8';
     ctx.beginPath();
-    ctx.arc(W/2, H - 40, 60, Math.PI, 0);
+    ctx.moveTo(0, H*0.38);
+    ctx.lineTo(0, H*0.55);
+    ctx.lineTo(W*0.38, H*0.55);
+    ctx.lineTo(W*0.42, H*0.38);
+    ctx.closePath();
     ctx.fill();
+    // Right stand
+    ctx.beginPath();
+    ctx.moveTo(W, H*0.38);
+    ctx.lineTo(W, H*0.55);
+    ctx.lineTo(W*0.62, H*0.55);
+    ctx.lineTo(W*0.58, H*0.38);
+    ctx.closePath();
+    ctx.fill();
+
+    // Seat rows left
+    ctx.strokeStyle = '#a0a0a0';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 6; i++) {
+        const t = i / 6;
+        ctx.beginPath();
+        ctx.moveTo(0, H*0.39 + t*0.16*H);
+        ctx.lineTo(W*0.38 - t*0.04*W, H*0.39 + t*0.16*H);
+        ctx.stroke();
+    }
+    // Seat rows right
+    for (let i = 0; i < 6; i++) {
+        const t = i / 6;
+        ctx.beginPath();
+        ctx.moveTo(W, H*0.39 + t*0.16*H);
+        ctx.lineTo(W*0.62 + t*0.04*W, H*0.39 + t*0.16*H);
+        ctx.stroke();
+    }
+
+    // Center field batter's eye
+    ctx.fillStyle = '#1a3d1a';
+    ctx.fillRect(W*0.3, H*0.3, W*0.4, H*0.28);
+
+    // Outfield wall
+    ctx.fillStyle = '#2d6b2d';
+    ctx.beginPath();
+    ctx.moveTo(0, H*0.56);
+    ctx.quadraticCurveTo(W*0.5, H*0.42, W, H*0.56);
+    ctx.lineTo(W, H*0.62);
+    ctx.quadraticCurveTo(W*0.5, H*0.48, 0, H*0.62);
+    ctx.closePath();
+    ctx.fill();
+
+    // Warning track
+    ctx.fillStyle = '#c8a060';
+    ctx.beginPath();
+    ctx.moveTo(0, H*0.6);
+    ctx.quadraticCurveTo(W*0.5, H*0.47, W, H*0.6);
+    ctx.lineTo(W, H*0.65);
+    ctx.quadraticCurveTo(W*0.5, H*0.52, 0, H*0.65);
+    ctx.closePath();
+    ctx.fill();
+
+    // Outfield grass
+    ctx.fillStyle = '#3a8a3a';
+    ctx.beginPath();
+    ctx.moveTo(0, H*0.63);
+    ctx.quadraticCurveTo(W*0.5, H*0.51, W, H*0.63);
+    ctx.lineTo(W, H*0.75);
+    ctx.lineTo(0, H*0.75);
+    ctx.closePath();
+    ctx.fill();
+
+    // Infield dirt
+    ctx.fillStyle = '#c8a060';
+    ctx.beginPath();
+    ctx.arc(W*0.5, H*0.85, W*0.32, Math.PI, 0);
+    ctx.closePath();
+    ctx.fill();
+
+    // Infield grass diamond
+    ctx.fillStyle = '#4aaa4a';
+    ctx.beginPath();
+    ctx.moveTo(W*0.5, H*0.68);
+    ctx.lineTo(W*0.62, H*0.78);
+    ctx.lineTo(W*0.5, H*0.88);
+    ctx.lineTo(W*0.38, H*0.78);
+    ctx.closePath();
+    ctx.fill();
+
+    // Pitcher's mound
+    ctx.fillStyle = '#b89050';
+    ctx.beginPath();
+    ctx.ellipse(W*0.5, H*0.78, 14, 8, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    // Bases
+    ctx.fillStyle = '#ffffff';
+    [[W*0.5,H*0.688],[W*0.624,H*0.778],[W*0.5,H*0.868],[W*0.376,H*0.778]].forEach(([bx,by]) => {
+        ctx.save();
+        ctx.translate(bx, by);
+        ctx.rotate(Math.PI/4);
+        ctx.fillRect(-5, -5, 10, 10);
+        ctx.restore();
+    });
+
+    // Ground
+    ctx.fillStyle = '#c8a060';
+    ctx.fillRect(0, H*0.85, W, H*0.15);
+
+    // Foul lines
+    ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(W*0.376, H*0.778);
+    ctx.lineTo(0, H*0.62);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(W*0.624, H*0.778);
+    ctx.lineTo(W, H*0.62);
+    ctx.stroke();
 }
 
-// Draw a pipe (looks like a wall of red bricks — Braves themed)
+// Draw baseball bats as obstacles
 function drawPipe(x, topH, botY) {
-    // Top pipe
-    const g1 = ctx.createLinearGradient(x, 0, x + PIPE_W, 0);
-    g1.addColorStop(0, '#8b1a2f');
-    g1.addColorStop(0.5, '#CE1141');
-    g1.addColorStop(1, '#8b1a2f');
-    ctx.fillStyle = g1;
-    ctx.fillRect(x, 0, PIPE_W, topH);
-    // cap
-    ctx.fillStyle = '#EAAA00';
-    ctx.fillRect(x - 5, topH - 18, PIPE_W + 10, 18);
+    const batW = 14;   // barrel width
+    const handleW = 7;
+    const knobW = 11;
+    const cx = x + PIPE_W / 2; // center x of the pipe slot
 
-    // Bottom pipe
-    ctx.fillStyle = g1;
-    ctx.fillRect(x, botY, PIPE_W, H - botY - 40);
-    // cap
-    ctx.fillStyle = '#EAAA00';
-    ctx.fillRect(x - 5, botY, PIPE_W + 10, 18);
+    // ---- TOP BAT (pointing down, knob at top, barrel at bottom) ----
+    ctx.save();
+    // Knob
+    ctx.fillStyle = '#f5e6c8';
+    ctx.beginPath();
+    ctx.ellipse(cx, 6, knobW/2, 5, 0, 0, Math.PI*2);
+    ctx.fill();
+    // Handle
+    const handleLen = Math.max(0, topH - 30);
+    ctx.fillStyle = '#d4a055';
+    ctx.fillRect(cx - handleW/2, 10, handleW, handleLen);
+    // Barrel taper
+    const taperStart = 10 + handleLen;
+    ctx.beginPath();
+    ctx.moveTo(cx - handleW/2, taperStart);
+    ctx.lineTo(cx - batW/2, taperStart + 12);
+    ctx.lineTo(cx - batW/2, topH);
+    ctx.lineTo(cx + batW/2, topH);
+    ctx.lineTo(cx + batW/2, taperStart + 12);
+    ctx.lineTo(cx + handleW/2, taperStart);
+    ctx.closePath();
+    ctx.fillStyle = '#c8903a';
+    ctx.fill();
+    // Wood grain lines on barrel
+    ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+    ctx.lineWidth = 1;
+    for (let g = 0; g < 3; g++) {
+        ctx.beginPath();
+        ctx.moveTo(cx - batW/2 + 3 + g*3, taperStart + 14);
+        ctx.lineTo(cx - batW/2 + 3 + g*3, topH - 2);
+        ctx.stroke();
+    }
+    // Barrel end cap
+    ctx.fillStyle = '#b07828';
+    ctx.beginPath();
+    ctx.ellipse(cx, topH, batW/2, 4, 0, 0, Math.PI*2);
+    ctx.fill();
+    // Tape on handle
+    ctx.fillStyle = '#222222';
+    ctx.fillRect(cx - handleW/2 - 1, 12, handleW + 2, 16);
+    ctx.restore();
+
+    // ---- BOTTOM BAT (pointing up, knob at bottom, barrel at top) ----
+    ctx.save();
+    const botEnd = H - 40; // ground
+    const batTotalH = botEnd - botY;
+    // Barrel at top
+    ctx.fillStyle = '#c8903a';
+    ctx.beginPath();
+    ctx.ellipse(cx, botY, batW/2, 4, 0, 0, Math.PI*2);
+    ctx.fill();
+    ctx.fillRect(cx - batW/2, botY, batW, Math.min(20, batTotalH));
+    // Taper into handle
+    const taperEnd = botY + Math.min(20, batTotalH);
+    const handleStart = taperEnd + 10;
+    if (handleStart < botEnd - 20) {
+        ctx.beginPath();
+        ctx.moveTo(cx - batW/2, taperEnd);
+        ctx.lineTo(cx - handleW/2, handleStart);
+        ctx.lineTo(cx - handleW/2, botEnd - 14);
+        ctx.lineTo(cx + handleW/2, botEnd - 14);
+        ctx.lineTo(cx + handleW/2, handleStart);
+        ctx.lineTo(cx + batW/2, taperEnd);
+        ctx.closePath();
+        ctx.fillStyle = '#d4a055';
+        ctx.fill();
+        // Wood grain
+        ctx.strokeStyle = 'rgba(0,0,0,0.12)';
+        ctx.lineWidth = 1;
+        for (let g = 0; g < 3; g++) {
+            ctx.beginPath();
+            ctx.moveTo(cx - batW/2 + 3 + g*3, botY + 2);
+            ctx.lineTo(cx - batW/2 + 3 + g*3, taperEnd - 2);
+            ctx.stroke();
+        }
+        // Tape
+        ctx.fillStyle = '#222222';
+        ctx.fillRect(cx - handleW/2 - 1, botEnd - 30, handleW + 2, 16);
+        // Knob
+        ctx.fillStyle = '#f5e6c8';
+        ctx.beginPath();
+        ctx.ellipse(cx, botEnd - 10, knobW/2, 5, 0, 0, Math.PI*2);
+        ctx.fill();
+    }
+    ctx.restore();
 }
 
 // Draw baseball as bird
@@ -277,12 +459,39 @@ function drawBird(x, y, rot) {
     ctx.arc(4, 0, 10, Math.PI - 0.8, Math.PI + 0.8);
     ctx.stroke();
 
-    // Tiny Braves "A" on ball
+    // Braves-style script "A" drawn with canvas paths
+    const s = BIRD_R / 18; // scale factor
+    ctx.save();
+    ctx.scale(s, s);
+    // Navy fill with red outline — mimics the Braves cap logo
+    ctx.strokeStyle = '#CE1141';
+    ctx.lineWidth = 1.5 / s;
     ctx.fillStyle = '#13274F';
-    ctx.font = 'bold 14px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('A', 0, 1);
+    ctx.beginPath();
+    // Left leg of A
+    ctx.moveTo(-9, 9);
+    ctx.bezierCurveTo(-8, 4, -5, -2, 0, -10);
+    // Right leg of A
+    ctx.bezierCurveTo(5, -2, 8, 4, 9, 9);
+    // Right serif foot
+    ctx.lineTo(11, 9);
+    ctx.lineTo(9, 9);
+    // Inner right
+    ctx.bezierCurveTo(7, 3, 4, -1, 0, -7);
+    // Inner left
+    ctx.bezierCurveTo(-4, -1, -7, 3, -9, 9);
+    ctx.lineTo(-11, 9);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    // Crossbar
+    ctx.beginPath();
+    ctx.moveTo(-4, 2);
+    ctx.bezierCurveTo(-2, 0, 2, 0, 4, 2);
+    ctx.lineWidth = 2 / s;
+    ctx.strokeStyle = '#CE1141';
+    ctx.stroke();
+    ctx.restore();
 
     ctx.restore();
 }
@@ -292,9 +501,11 @@ function checkCollision() {
     const bx = bird.x, by = bird.y;
     // Ground / ceiling
     if (by + BIRD_R >= H - 40 || by - BIRD_R <= 0) return true;
-    // Pipes
+    // Pipes — collision uses bat barrel width (14px), centered in PIPE_W slot
+    const batHalf = 9;
     for (const p of pipes) {
-        if (bx + BIRD_R > p.x + 4 && bx - BIRD_R < p.x + PIPE_W - 4) {
+        const pcx = p.x + PIPE_W / 2;
+        if (bx + BIRD_R > pcx - batHalf && bx - BIRD_R < pcx + batHalf) {
             if (by - BIRD_R < p.topH || by + BIRD_R > p.botY) return true;
         }
     }
