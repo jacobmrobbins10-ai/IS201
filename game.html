@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Flappy Brave – Atlanta Braves Edition</title>
+    <style>
+        /* ---- Reset & Base ---- */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@700&display=swap');
+
+        body {
+            background: #13274F;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            font-family: 'Oswald', 'Arial Black', sans-serif;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        h1 {
+            font-size: 2rem;
+            letter-spacing: 0.1em;
+            color: #EAAA00;
+            text-transform: uppercase;
+            margin-bottom: 0.3rem;
+        }
+        .subtitle {
+            font-size: 0.9rem;
+            color: #aac;
+            letter-spacing: 0.15em;
+            margin-bottom: 1rem;
+        }
+
+        #game-wrapper {
+            position: relative;
+        }
+
+        canvas {
+            display: block;
+            border: 3px solid #CE1141;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        /* Overlay for start / game-over */
+        #overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(13,26,48,0.82);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+        }
+
+        #overlay h2 {
+            font-size: 2.2rem;
+            color: #EAAA00;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            text-align: center;
+        }
+        #overlay p {
+            color: #ccd;
+            font-size: 1rem;
+            letter-spacing: 0.1em;
+            margin: 0.5rem 0 1.5rem;
+            text-align: center;
+        }
+        #overlay .score-display {
+            font-size: 3rem;
+            color: #fff;
+            margin: 0.3rem 0;
+        }
+        #overlay .best-display {
+            font-size: 1rem;
+            color: #EAAA00;
+            margin-bottom: 1.2rem;
+        }
+        #overlay button {
+            background: #CE1141;
+            color: #fff;
+            border: none;
+            font-family: inherit;
+            font-size: 1.1rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            padding: 0.75rem 2.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.15s, transform 0.1s;
+        }
+        #overlay button:hover {
+            background: #EAAA00;
+            color: #13274F;
+            transform: scale(1.04);
+        }
+
+        #live-score {
+            position: absolute;
+            top: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 2.2rem;
+            color: #fff;
+            text-shadow: 0 2px 6px rgba(0,0,0,0.6);
+            pointer-events: none;
+        }
+
+        .nav-links {
+            margin-top: 1rem;
+            font-size: 0.85rem;
+            letter-spacing: 0.1em;
+        }
+        .nav-links a {
+            color: #EAAA00;
+            text-decoration: none;
+            margin: 0 0.7rem;
+        }
+        .nav-links a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+<h1>⚾ Flappy Brave</h1>
+<p class="subtitle">Atlanta Braves Edition · Tap or press Space</p>
+
+<div id="game-wrapper">
+    <canvas id="gameCanvas" width="420" height="580"></canvas>
+    <div id="live-score"></div>
+
+    <div id="overlay">
+        <h2 id="overlay-title">Flappy Brave</h2>
+        <p id="overlay-msg">Dodge the walls. Score big.<br>Tap, click, or press Space to start.</p>
+        <div class="score-display" id="overlay-score" style="display:none"></div>
+        <div class="best-display" id="overlay-best" style="display:none"></div>
+        <button id="startBtn">Play Ball! ⚾</button>
+    </div>
+</div>
+
+<div class="nav-links">
+    <a href="braves.html">← Braves Page</a>
+    <a href="index.html">Résumé</a>
+</div>
+
+<script>
+// ---- Canvas setup ----
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+
+// ---- Game state ----
+let state = 'idle'; // idle | playing | dead
+let bird, pipes, frameCount, score, bestScore = 0;
+
+// ---- Constants ----
+const GRAVITY    = 0.38;
+const FLAP       = -8.5;
+const PIPE_W     = 60;
+const GAP        = 155;
+const PIPE_SPEED = 2.8;
+const PIPE_INT   = 90; // frames between pipes
+const BIRD_R     = 18; // bird radius (drawn as tomahawk / baseball)
+
+function initGame() {
+    bird = { x: 100, y: H / 2, vy: 0, rotation: 0 };
+    pipes = [];
+    frameCount = 0;
+    score = 0;
+    document.getElementById('live-score').textContent = '';
+}
+
+// ---- Input ----
+function flap() {
+    if (state === 'playing') {
+        bird.vy = FLAP;
+    }
+}
+document.addEventListener('keydown', e => {
+    if (e.code === 'Space') { e.preventDefault(); flap(); }
+});
+canvas.addEventListener('click', flap);
+canvas.addEventListener('touchstart', e => { e.preventDefault(); flap(); }, { passive: false });
+
+document.getElementById('startBtn').addEventListener('click', () => {
+    document.getElementById('overlay').style.display = 'none';
+    initGame();
+    state = 'playing';
+    requestAnimationFrame(loop);
+});
+
+// ---- Drawing helpers ----
+
+// Draw sky background
+function drawBackground() {
+    // Sky gradient
+    const sky = ctx.createLinearGradient(0, 0, 0, H);
+    sky.addColorStop(0, '#1a4a8a');
+    sky.addColorStop(1, '#4a90d4');
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, W, H);
+
+    // Simple clouds
+    ctx.fillStyle = 'rgba(255,255,255,0.25)';
+    [[60,80,40],[200,50,55],[350,100,35]].forEach(([x,y,r]) => {
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI*2);
+        ctx.arc(x+30, y-10, r*0.7, 0, Math.PI*2);
+        ctx.fill();
+    });
+
+    // Ground
+    ctx.fillStyle = '#2d5a1b';
+    ctx.fillRect(0, H - 40, W, 40);
+    ctx.fillStyle = '#4a8a2d';
+    ctx.fillRect(0, H - 40, W, 8);
+
+    // Diamond dirt patch
+    ctx.fillStyle = '#c8a96e';
+    ctx.beginPath();
+    ctx.arc(W/2, H - 40, 60, Math.PI, 0);
+    ctx.fill();
+}
+
+// Draw a pipe (looks like a wall of red bricks — Braves themed)
+function drawPipe(x, topH, botY) {
+    // Top pipe
+    const g1 = ctx.createLinearGradient(x, 0, x + PIPE_W, 0);
+    g1.addColorStop(0, '#8b1a2f');
+    g1.addColorStop(0.5, '#CE1141');
+    g1.addColorStop(1, '#8b1a2f');
+    ctx.fillStyle = g1;
+    ctx.fillRect(x, 0, PIPE_W, topH);
+    // cap
+    ctx.fillStyle = '#EAAA00';
+    ctx.fillRect(x - 5, topH - 18, PIPE_W + 10, 18);
+
+    // Bottom pipe
+    ctx.fillStyle = g1;
+    ctx.fillRect(x, botY, PIPE_W, H - botY - 40);
+    // cap
+    ctx.fillStyle = '#EAAA00';
+    ctx.fillRect(x - 5, botY, PIPE_W + 10, 18);
+}
+
+// Draw baseball as bird
+function drawBird(x, y, rot) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(rot);
+
+    // Ball shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.beginPath();
+    ctx.ellipse(3, 4, BIRD_R, BIRD_R * 0.7, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Ball body
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(0, 0, BIRD_R, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Ball seams (red stitching)
+    ctx.strokeStyle = '#CE1141';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(-4, 0, 10, -0.8, 0.8);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(4, 0, 10, Math.PI - 0.8, Math.PI + 0.8);
+    ctx.stroke();
+
+    // Tiny Braves "A" on ball
+    ctx.fillStyle = '#13274F';
+    ctx.font = 'bold 14px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('A', 0, 1);
+
+    ctx.restore();
+}
+
+// ---- Collision ----
+function checkCollision() {
+    const bx = bird.x, by = bird.y;
+    // Ground / ceiling
+    if (by + BIRD_R >= H - 40 || by - BIRD_R <= 0) return true;
+    // Pipes
+    for (const p of pipes) {
+        if (bx + BIRD_R > p.x + 4 && bx - BIRD_R < p.x + PIPE_W - 4) {
+            if (by - BIRD_R < p.topH || by + BIRD_R > p.botY) return true;
+        }
+    }
+    return false;
+}
+
+// ---- Game loop ----
+function loop() {
+    if (state !== 'playing') return;
+
+    frameCount++;
+
+    // Bird physics
+    bird.vy += GRAVITY;
+    bird.y  += bird.vy;
+    bird.rotation = Math.min(Math.max(bird.vy * 0.06, -0.5), 1.0);
+
+    // Spawn pipes
+    if (frameCount % PIPE_INT === 0) {
+        const topH = 60 + Math.random() * (H - GAP - 140);
+        pipes.push({ x: W, topH, botY: topH + GAP, passed: false });
+    }
+
+    // Move pipes & score
+    for (const p of pipes) {
+        p.x -= PIPE_SPEED;
+        if (!p.passed && p.x + PIPE_W < bird.x) {
+            p.passed = true;
+            score++;
+            document.getElementById('live-score').textContent = score;
+        }
+    }
+    pipes = pipes.filter(p => p.x + PIPE_W > -10);
+
+    // Collision
+    if (checkCollision()) {
+        state = 'dead';
+        if (score > bestScore) bestScore = score;
+        showGameOver();
+        return;
+    }
+
+    // Draw
+    drawBackground();
+    pipes.forEach(p => drawPipe(p.x, p.topH, p.botY));
+    drawBird(bird.x, bird.y, bird.rotation);
+
+    requestAnimationFrame(loop);
+}
+
+function showGameOver() {
+    const ov = document.getElementById('overlay');
+    const medals = score >= 30 ? '🏆 WORLD CHAMPS!' : score >= 15 ? '🥈 Postseason Bound' : score >= 5 ? '⚾ Good At-Bat' : '😬 Ouch...';
+    document.getElementById('overlay-title').textContent = 'Game Over';
+    document.getElementById('overlay-msg').textContent = medals;
+    document.getElementById('overlay-score').textContent = score;
+    document.getElementById('overlay-score').style.display = 'block';
+    document.getElementById('overlay-best').textContent = `Best: ${bestScore}`;
+    document.getElementById('overlay-best').style.display = 'block';
+    document.getElementById('startBtn').textContent = 'Try Again ⚾';
+    ov.style.display = 'flex';
+}
+
+// ---- Initial static draw ----
+drawBackground();
+drawBird(100, H/2, 0);
+</script>
+</body>
+</html>
