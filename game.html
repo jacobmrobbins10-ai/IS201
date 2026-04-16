@@ -161,9 +161,9 @@ let bird, pipes, frameCount, score, bestScore = 0;
 
 // ---- Constants ----
 const GRAVITY    = 0.38;
-const FLAP       = -8.5;
+const FLAP       = -6.5;
 const PIPE_W     = 60;
-const GAP        = 155;
+const GAP        = 195;
 const PIPE_SPEED = 2.8;
 const PIPE_INT   = 90; // frames between pipes
 const BIRD_R     = 18; // bird radius (drawn as tomahawk / baseball)
@@ -199,15 +199,24 @@ document.getElementById('startBtn').addEventListener('click', () => {
 
 // Draw Truist Park stadium background
 function drawBackground() {
-    // Day sky
+    // Sky — evening/game-time feel in Braves navy tones
     const sky = ctx.createLinearGradient(0, 0, 0, H * 0.6);
-    sky.addColorStop(0, '#5ba3d9');
-    sky.addColorStop(1, '#a8d4f0');
+    sky.addColorStop(0, '#0d1f3c');
+    sky.addColorStop(0.5, '#1a3a6b');
+    sky.addColorStop(1, '#2e5fa3');
     ctx.fillStyle = sky;
     ctx.fillRect(0, 0, W, H);
 
-    // Clouds
-    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    // Stars in the upper sky
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    [[30,18],[80,8],[140,22],[220,10],[300,18],[370,6],[410,24],[55,35],[180,30],[340,28]].forEach(([sx,sy]) => {
+        ctx.beginPath();
+        ctx.arc(sx, sy, 1, 0, Math.PI*2);
+        ctx.fill();
+    });
+
+    // Clouds (subtle, night-ish)
+    ctx.fillStyle = 'rgba(255,255,255,0.12)';
     [[55,55,28],[170,40,38],[320,65,24],[390,45,18]].forEach(([x,y,r]) => {
         ctx.beginPath();
         ctx.arc(x, y, r, 0, Math.PI*2);
@@ -216,8 +225,8 @@ function drawBackground() {
         ctx.fill();
     });
 
-    // Left stand
-    ctx.fillStyle = '#c8c8c8';
+    // Left stand — navy
+    ctx.fillStyle = '#13274F';
     ctx.beginPath();
     ctx.moveTo(0, H*0.38);
     ctx.lineTo(0, H*0.55);
@@ -225,7 +234,18 @@ function drawBackground() {
     ctx.lineTo(W*0.42, H*0.38);
     ctx.closePath();
     ctx.fill();
-    // Right stand
+    // Left stand red accent stripe
+    ctx.fillStyle = '#CE1141';
+    ctx.beginPath();
+    ctx.moveTo(0, H*0.38);
+    ctx.lineTo(W*0.42, H*0.38);
+    ctx.lineTo(W*0.41, H*0.40);
+    ctx.lineTo(0, H*0.40);
+    ctx.closePath();
+    ctx.fill();
+
+    // Right stand — navy
+    ctx.fillStyle = '#13274F';
     ctx.beginPath();
     ctx.moveTo(W, H*0.38);
     ctx.lineTo(W, H*0.55);
@@ -233,9 +253,18 @@ function drawBackground() {
     ctx.lineTo(W*0.58, H*0.38);
     ctx.closePath();
     ctx.fill();
+    // Right stand red accent stripe
+    ctx.fillStyle = '#CE1141';
+    ctx.beginPath();
+    ctx.moveTo(W, H*0.38);
+    ctx.lineTo(W*0.58, H*0.38);
+    ctx.lineTo(W*0.59, H*0.40);
+    ctx.lineTo(W, H*0.40);
+    ctx.closePath();
+    ctx.fill();
 
-    // Seat rows left
-    ctx.strokeStyle = '#a0a0a0';
+    // Seat rows left — gold tint to mimic stadium lights on seats
+    ctx.strokeStyle = 'rgba(234,170,0,0.25)';
     ctx.lineWidth = 1;
     for (let i = 0; i < 6; i++) {
         const t = i / 6;
@@ -253,12 +282,24 @@ function drawBackground() {
         ctx.stroke();
     }
 
-    // Center field batter's eye
-    ctx.fillStyle = '#1a3d1a';
+    // Stadium lights glow (top corners of stands)
+    const glowL = ctx.createRadialGradient(0, H*0.36, 0, 0, H*0.36, 60);
+    glowL.addColorStop(0, 'rgba(234,170,0,0.35)');
+    glowL.addColorStop(1, 'rgba(234,170,0,0)');
+    ctx.fillStyle = glowL;
+    ctx.fillRect(0, H*0.1, 120, 120);
+    const glowR = ctx.createRadialGradient(W, H*0.36, 0, W, H*0.36, 60);
+    glowR.addColorStop(0, 'rgba(234,170,0,0.35)');
+    glowR.addColorStop(1, 'rgba(234,170,0,0)');
+    ctx.fillStyle = glowR;
+    ctx.fillRect(W-120, H*0.1, 120, 120);
+
+    // Center field batter's eye — dark navy
+    ctx.fillStyle = '#0d1f3c';
     ctx.fillRect(W*0.3, H*0.3, W*0.4, H*0.28);
 
-    // Outfield wall
-    ctx.fillStyle = '#2d6b2d';
+    // Outfield wall — Braves red
+    ctx.fillStyle = '#8b0f2a';
     ctx.beginPath();
     ctx.moveTo(0, H*0.56);
     ctx.quadraticCurveTo(W*0.5, H*0.42, W, H*0.56);
@@ -266,6 +307,13 @@ function drawBackground() {
     ctx.quadraticCurveTo(W*0.5, H*0.48, 0, H*0.62);
     ctx.closePath();
     ctx.fill();
+    // Wall top stripe gold
+    ctx.strokeStyle = '#EAAA00';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(0, H*0.56);
+    ctx.quadraticCurveTo(W*0.5, H*0.42, W, H*0.56);
+    ctx.stroke();
 
     // Warning track
     ctx.fillStyle = '#c8a060';
@@ -277,8 +325,8 @@ function drawBackground() {
     ctx.closePath();
     ctx.fill();
 
-    // Outfield grass
-    ctx.fillStyle = '#3a8a3a';
+    // Outfield grass — bright stadium-lit
+    ctx.fillStyle = '#2e7d32';
     ctx.beginPath();
     ctx.moveTo(0, H*0.63);
     ctx.quadraticCurveTo(W*0.5, H*0.51, W, H*0.63);
@@ -286,16 +334,25 @@ function drawBackground() {
     ctx.lineTo(0, H*0.75);
     ctx.closePath();
     ctx.fill();
+    // Mowing pattern stripes
+    ctx.strokeStyle = 'rgba(0,0,0,0.08)';
+    ctx.lineWidth = 8;
+    for (let s = 0; s < W; s += 18) {
+        ctx.beginPath();
+        ctx.moveTo(s, H*0.63);
+        ctx.lineTo(s, H*0.75);
+        ctx.stroke();
+    }
 
     // Infield dirt
-    ctx.fillStyle = '#c8a060';
+    ctx.fillStyle = '#a0784a';
     ctx.beginPath();
     ctx.arc(W*0.5, H*0.85, W*0.32, Math.PI, 0);
     ctx.closePath();
     ctx.fill();
 
-    // Infield grass diamond
-    ctx.fillStyle = '#4aaa4a';
+    // Infield grass diamond — bright lit green
+    ctx.fillStyle = '#43a047';
     ctx.beginPath();
     ctx.moveTo(W*0.5, H*0.68);
     ctx.lineTo(W*0.62, H*0.78);
@@ -339,7 +396,7 @@ function drawBackground() {
 
 // Draw baseball bats as obstacles
 function drawPipe(x, topH, botY) {
-    const batW = 14;   // barrel width
+    const batW = 22;   // barrel width
     const handleW = 7;
     const knobW = 11;
     const cx = x + PIPE_W / 2; // center x of the pipe slot
@@ -459,40 +516,55 @@ function drawBird(x, y, rot) {
     ctx.arc(4, 0, 10, Math.PI - 0.8, Math.PI + 0.8);
     ctx.stroke();
 
-    // Braves-style script "A" drawn with canvas paths
-    const s = BIRD_R / 18; // scale factor
+    // Braves script "A" — drawn to mimic the classic tomahawk-serif cap logo
+    // Scaled to fit inside the ball. Origin is ball center (0,0).
     ctx.save();
-    ctx.scale(s, s);
-    // Navy fill with red outline — mimics the Braves cap logo
-    ctx.strokeStyle = '#CE1141';
-    ctx.lineWidth = 1.5 / s;
+    ctx.translate(0, 1);
+    const sc = 0.72; // scale to fit in ball radius ~18
+    ctx.scale(sc, sc);
+
+    // ---- Outer A shape (navy fill) ----
     ctx.fillStyle = '#13274F';
+    ctx.strokeStyle = '#CE1141';
+    ctx.lineWidth = 1.2 / sc;
     ctx.beginPath();
-    // Left leg of A
-    ctx.moveTo(-9, 9);
-    ctx.bezierCurveTo(-8, 4, -5, -2, 0, -10);
-    // Right leg of A
-    ctx.bezierCurveTo(5, -2, 8, 4, 9, 9);
-    // Right serif foot
-    ctx.lineTo(11, 9);
-    ctx.lineTo(9, 9);
-    // Inner right
-    ctx.bezierCurveTo(7, 3, 4, -1, 0, -7);
-    // Inner left
-    ctx.bezierCurveTo(-4, -1, -7, 3, -9, 9);
-    ctx.lineTo(-11, 9);
+    // Start bottom-left foot/serif
+    ctx.moveTo(-13, 10);
+    ctx.lineTo(-10, 10);
+    // Left leg rising — curves inward slightly (script style)
+    ctx.bezierCurveTo(-9, 8, -7, 3, -5, -1);
+    // Up to the peak with a slight left-lean (script A leans right)
+    ctx.bezierCurveTo(-3, -6, -1, -11, 1, -13);
+    // Small top curl to the right (the "peak" of the script A)
+    ctx.bezierCurveTo(2, -14, 4, -14, 4.5, -12);
+    // Right leg descending
+    ctx.bezierCurveTo(6, -7, 8, -1, 10, 5);
+    // Bottom-right — script A has a longer right leg that curves out
+    ctx.bezierCurveTo(11, 7, 12, 9, 13, 10);
+    ctx.lineTo(10, 10);
+    // Inner right leg going back up
+    ctx.bezierCurveTo(9, 7, 7, 1, 5.5, -4);
+    // Crossbar right connection
+    ctx.bezierCurveTo(5, -6, 4, -7, 3, -7);
+    // Crossbar notch
+    ctx.bezierCurveTo(1.5, -7, 0, -5, -1, -3);
+    // Crossbar left connection
+    ctx.bezierCurveTo(-2.5, -1, -4, 1, -5, 3);
+    // Inner left leg going down
+    ctx.bezierCurveTo(-6, 5, -8, 8, -10, 10);
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
-    // Crossbar
+
+    // ---- Crossbar (horizontal stroke through the middle) ----
     ctx.beginPath();
-    ctx.moveTo(-4, 2);
-    ctx.bezierCurveTo(-2, 0, 2, 0, 4, 2);
-    ctx.lineWidth = 2 / s;
+    ctx.moveTo(-3.5, 3.5);
+    ctx.bezierCurveTo(-1, 1.5, 2, 1.5, 5, 2.5);
+    ctx.lineWidth = 2.2 / sc;
     ctx.strokeStyle = '#CE1141';
     ctx.stroke();
-    ctx.restore();
 
+    ctx.restore();
     ctx.restore();
 }
 
@@ -502,7 +574,7 @@ function checkCollision() {
     // Ground / ceiling
     if (by + BIRD_R >= H - 40 || by - BIRD_R <= 0) return true;
     // Pipes — collision uses bat barrel width (14px), centered in PIPE_W slot
-    const batHalf = 9;
+    const batHalf = 13;
     for (const p of pipes) {
         const pcx = p.x + PIPE_W / 2;
         if (bx + BIRD_R > pcx - batHalf && bx - BIRD_R < pcx + batHalf) {
